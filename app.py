@@ -77,7 +77,7 @@ signal = pd.read_csv(
     f"{selected_stock}_recommendation.csv"
 )
 
-metrics_file = RESULTS_DIR / f"{selected_stock}_lstm_metrics.csv"
+metrics_file = REPORTS_DIR / "lstm_metrics.csv"
 
 if metrics_file.exists():
 
@@ -230,57 +230,47 @@ st.pyplot(fig)
 # Forecast
 # --------------------------------------------------
 
-st.subheader("🔮 30-Day LSTM Forecast")
+st.subheader("🔮 30-Day Price Forecast")
 
-fig, ax = plt.subplots(figsize=(14,6))
+fig, ax = plt.subplots(figsize=(15,6))
 
 if "Date" in forecast.columns:
-
-    x = forecast["Date"]
-
+    x = pd.to_datetime(forecast["Date"])
 else:
-
-    x = forecast["ds"]
+    x = pd.to_datetime(forecast["ds"])
 
 if "Predicted_Close" in forecast.columns:
-
     y = forecast["Predicted_Close"]
-
 else:
-
     y = forecast["yhat"]
 
 ax.plot(
     x,
     y,
     marker="o",
-    linewidth=2
+    markersize=4,
+    linewidth=2,
+    color="dodgerblue",
+    label="Predicted Price"
 )
 
-ax.set_title(
-    f"{selected_stock} 30-Day Forecast"
-)
-
+ax.set_title(f"{selected_stock} 30-Day Forecast")
 ax.set_xlabel("Date")
-
 ax.set_ylabel("Predicted Price")
 
-ax.grid(True)
+ax.grid(alpha=0.3)
 
-ax.xaxis.set_major_locator(
-    mdates.DayLocator(interval=5)
-)
-
-ax.xaxis.set_major_formatter(
-    mdates.DateFormatter("%d-%b-%Y")
-)
+# Show only weekly dates
+ax.xaxis.set_major_locator(mdates.WeekdayLocator(interval=1))
+ax.xaxis.set_major_formatter(mdates.DateFormatter("%d-%b"))
 
 plt.xticks(rotation=45)
+
+plt.legend()
 
 plt.tight_layout()
 
 st.pyplot(fig)
-
 
 # --------------------------------------------------
 # Market Sentiment
@@ -356,25 +346,41 @@ c4.metric(
 
 st.subheader("🤖 LSTM Model Performance")
 
-if metrics.empty:
+if metrics_file.exists():
 
-    st.info(
-        "LSTM Metrics file not found."
-    )
+    metrics = pd.read_csv(metrics_file)
+
+    if len(metrics.columns) >= 2:
+
+        col1,col2,col3,col4 = st.columns(4)
+
+        col1.metric(
+            metrics.iloc[0,0],
+            metrics.iloc[0,1]
+        )
+
+        col2.metric(
+            metrics.iloc[1,0],
+            metrics.iloc[1,1]
+        )
+
+        col3.metric(
+            metrics.iloc[2,0],
+            metrics.iloc[2,1]
+        )
+
+        col4.metric(
+            metrics.iloc[3,0],
+            metrics.iloc[3,1]
+        )
+
+    else:
+
+        st.dataframe(metrics,use_container_width=True)
 
 else:
 
-    st.dataframe(
-        metrics,
-        use_container_width=True
-    )
-
-st.download_button(
-    label="📥 Download Recommendation",
-    data=signal.to_csv(index=False),
-    file_name=f"{selected_stock}_recommendation.csv",
-    mime="text/csv"
-)
+    st.warning("LSTM metrics file not found.")
 # --------------------------------------------------
 # Footer
 # --------------------------------------------------
