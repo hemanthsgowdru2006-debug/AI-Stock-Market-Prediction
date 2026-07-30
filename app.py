@@ -233,22 +233,28 @@ st.pyplot(fig)
 
 st.subheader("🔮 30-Day Prophet Forecast")
 
-# Keep only the last 30 forecast values
-forecast_plot = forecast.tail(30).copy()
-
 # Select date column
-if "Date" in forecast_plot.columns:
-    forecast_plot["Date"] = pd.to_datetime(forecast_plot["Date"])
-    x = forecast_plot["Date"]
-else:
-    forecast_plot["ds"] = pd.to_datetime(forecast_plot["ds"])
-    x = forecast_plot["ds"]
+date_col = "Date" if "Date" in forecast.columns else "ds"
+forecast[date_col] = pd.to_datetime(forecast[date_col])
 
 # Select prediction column
-if "Predicted_Close" in forecast_plot.columns:
-    y = forecast_plot["Predicted_Close"]
-else:
-    y = forecast_plot["yhat"]
+value_col = "Predicted_Close" if "Predicted_Close" in forecast.columns else "yhat"
+
+# Last available historical date
+last_history_date = stock["Date"].max()
+
+# Keep only future forecast
+forecast_plot = forecast[forecast[date_col] > last_history_date].copy()
+
+# If there are more than 30 future rows, keep only 30
+forecast_plot = forecast_plot.head(30)
+
+# Fallback if no future rows are found
+if forecast_plot.empty:
+    forecast_plot = forecast.tail(30).copy()
+
+x = forecast_plot[date_col]
+y = forecast_plot[value_col]
 
 fig, ax = plt.subplots(figsize=(15,6))
 
@@ -262,20 +268,20 @@ ax.plot(
     label="Predicted Price"
 )
 
-ax.set_title(f"{selected_stock} 30-Day Forecast")
+ax.set_title(f"{selected_stock} 30-Day Prophet Forecast")
 ax.set_xlabel("Date")
 ax.set_ylabel("Predicted Price")
 
 ax.grid(True, alpha=0.3)
 
-# Automatically choose a small number of date labels
-locator = mdates.AutoDateLocator(minticks=5, maxticks=8)
-formatter = mdates.ConciseDateFormatter(locator)
+# Show one label every 5 days
+locator = mdates.DayLocator(interval=5)
+formatter = mdates.DateFormatter("%d-%b")
 
 ax.xaxis.set_major_locator(locator)
 ax.xaxis.set_major_formatter(formatter)
 
-plt.setp(ax.get_xticklabels(), rotation=30, ha="right")
+plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
 
 plt.legend()
 
