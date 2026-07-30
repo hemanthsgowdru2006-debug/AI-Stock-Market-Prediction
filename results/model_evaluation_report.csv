@@ -1,0 +1,7 @@
+Metric,Value
+Mean Absolute Error (MAE),15.1474
+Root Mean Squared Error (RMSE),18.2347
+R² Score,0.4347
+Mean Absolute Percentage Error (MAPE),5.13
+Prediction Accuracy (%),94.87
+Prediction Confidence (%),43.47

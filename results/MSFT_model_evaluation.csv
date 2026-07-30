@@ -1,0 +1,2 @@
+Ticker,Current Price,Predicted Price,Expected Change (%),Recommendation,Trading Score,Confidence (%),Average Sentiment,Trend,Overall Performance
+MSFT,393.35,520.93,32.43,HOLD,2.0,40.0,0.114,Bullish,Good

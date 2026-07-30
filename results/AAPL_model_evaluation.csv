@@ -1,0 +1,2 @@
+Ticker,Current Price,Predicted Price,Expected Change (%),Recommendation,Trading Score,Confidence (%),Average Sentiment,Trend,Overall Performance
+AAPL,340.08,302.69,-10.99,SELL,-2.0,40.0,0.132,Bearish,Good

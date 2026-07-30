@@ -1,0 +1,6 @@
+Ticker,Current Price,Predicted Price,Expected Change (%),Recommendation,Trading Score,Confidence (%),Average Sentiment,Trend,Overall Performance
+AAPL,340.08,302.69,-10.99,SELL,-2.0,40.0,0.132,Bearish,Good
+MSFT,393.35,520.93,32.43,HOLD,2.0,40.0,0.114,Bullish,Good
+GOOGL,333.71,333.44,-0.08,SELL,-4.0,80.0,0.143,Bearish,Excellent
+AMZN,230.86,246.3,6.69,HOLD,0.0,0.0,0.152,Bullish,Needs Improvement
+NVDA,197.01,203.17,3.13,HOLD,0.0,0.0,0.122,Bullish,Needs Improvement

@@ -1,0 +1,2 @@
+Ticker,Current Price,Predicted Price,Expected Change (%),Recommendation,Trading Score,Confidence (%),Average Sentiment,Trend,Overall Performance
+GOOGL,333.71,333.44,-0.08,SELL,-4.0,80.0,0.143,Bearish,Excellent
