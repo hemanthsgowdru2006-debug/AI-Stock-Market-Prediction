@@ -1,5 +1,6 @@
 from pathlib import Path
-
+from prophet import Prophet
+import yfinance as yf
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -49,6 +50,49 @@ st.sidebar.success(
     f"Current Stock : {selected_stock}"
 )
 
+@st.cache_data(ttl=3600)
+def generate_prophet_forecast(ticker):
+
+    # Download latest 2 years of data
+    df = yf.download(
+        ticker,
+        period="2y",
+        interval="1d",
+        auto_adjust=True,
+        progress=False
+    )
+
+    # Handle MultiIndex columns if present
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+
+    df = df.reset_index()
+
+    df = df[["Date", "Close"]].dropna()
+
+    df.columns = ["ds", "y"]
+
+    model = Prophet(
+        daily_seasonality=False,
+        weekly_seasonality=True,
+        yearly_seasonality=True
+    )
+
+    model.fit(df)
+
+    future = model.make_future_dataframe(
+        periods=30,
+        freq="D"      # Calendar days
+    )
+
+    forecast = model.predict(future)
+
+    future_forecast = forecast[
+        forecast["ds"] > df["ds"].max()
+    ][["ds", "yhat"]]
+
+    return future_forecast
+
 # --------------------------------------------------
 # Load Data
 # --------------------------------------------------
@@ -60,13 +104,8 @@ stock = pd.read_csv(
     "processed_stock_data.csv"
 )
 
-forecast = pd.read_csv(
-    REPORTS_DIR /
-    selected_stock /
-    "prophet_forecast.csv"
-)
+forecast = generate_prophet_forecast(selected_stock)
 # Keep only future forecast
-forecast = forecast.tail(30)
 sentiment = pd.read_csv(
     REPORTS_DIR /
     selected_stock /
@@ -227,65 +266,35 @@ plt.tight_layout()
 st.pyplot(fig)
 
 
-# --------------------------------------------------
-# Forecast
-# --------------------------------------------------
+st.subheader("🔮 Next 30-Day AI Forecast")
 
-st.subheader("🔮 30-Day Prophet Forecast")
-
-# Select date column
-date_col = "Date" if "Date" in forecast.columns else "ds"
-forecast[date_col] = pd.to_datetime(forecast[date_col])
-
-# Select prediction column
-value_col = "Predicted_Close" if "Predicted_Close" in forecast.columns else "yhat"
-
-# Last available historical date
-last_history_date = stock["Date"].max()
-
-# Keep only future forecast
-forecast_plot = forecast[forecast[date_col] > last_history_date].copy()
-
-# If there are more than 30 future rows, keep only 30
-forecast_plot = forecast_plot.head(30)
-
-# Fallback if no future rows are found
-if forecast_plot.empty:
-    forecast_plot = forecast.tail(30).copy()
-
-x = forecast_plot[date_col]
-y = forecast_plot[value_col]
+forecast_plot = forecast.copy()
 
 fig, ax = plt.subplots(figsize=(15,6))
 
 ax.plot(
-    x,
-    y,
-    color="dodgerblue",
-    linewidth=2,
+    forecast_plot["ds"],
+    forecast_plot["yhat"],
     marker="o",
-    markersize=5,
-    label="Predicted Price"
+    linewidth=2,
+    label="Forecast"
 )
 
-ax.set_title(f"{selected_stock} 30-Day Prophet Forecast")
+ax.set_title(f"{selected_stock} Next 30 Business-Day Forecast")
 ax.set_xlabel("Date")
-ax.set_ylabel("Predicted Price")
+ax.set_ylabel("Predicted Closing Price")
 
-ax.grid(True, alpha=0.3)
+ax.grid(alpha=0.3)
 
-# Show one label every 5 days
-locator = mdates.DayLocator(interval=5)
+locator = mdates.AutoDateLocator()
 formatter = mdates.DateFormatter("%d-%b")
 
 ax.xaxis.set_major_locator(locator)
 ax.xaxis.set_major_formatter(formatter)
 
-plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
+plt.xticks(rotation=45)
 
 plt.legend()
-
-plt.tight_layout()
 
 st.pyplot(fig)
 # --------------------------------------------------
