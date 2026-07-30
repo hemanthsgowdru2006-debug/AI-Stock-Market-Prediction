@@ -65,7 +65,8 @@ forecast = pd.read_csv(
     selected_stock /
     "prophet_forecast.csv"
 )
-
+# Keep only future forecast
+forecast = forecast.tail(30)
 sentiment = pd.read_csv(
     REPORTS_DIR /
     selected_stock /
@@ -230,27 +231,34 @@ st.pyplot(fig)
 # Forecast
 # --------------------------------------------------
 
-st.subheader("🔮 30-Day Price Forecast")
+st.subheader("🔮 30-Day Prophet Forecast")
+
+# Keep only the last 30 forecast values
+forecast_plot = forecast.tail(30).copy()
+
+# Select date column
+if "Date" in forecast_plot.columns:
+    forecast_plot["Date"] = pd.to_datetime(forecast_plot["Date"])
+    x = forecast_plot["Date"]
+else:
+    forecast_plot["ds"] = pd.to_datetime(forecast_plot["ds"])
+    x = forecast_plot["ds"]
+
+# Select prediction column
+if "Predicted_Close" in forecast_plot.columns:
+    y = forecast_plot["Predicted_Close"]
+else:
+    y = forecast_plot["yhat"]
 
 fig, ax = plt.subplots(figsize=(15,6))
-
-if "Date" in forecast.columns:
-    x = pd.to_datetime(forecast["Date"])
-else:
-    x = pd.to_datetime(forecast["ds"])
-
-if "Predicted_Close" in forecast.columns:
-    y = forecast["Predicted_Close"]
-else:
-    y = forecast["yhat"]
 
 ax.plot(
     x,
     y,
-    marker="o",
-    markersize=4,
-    linewidth=2,
     color="dodgerblue",
+    linewidth=2,
+    marker="o",
+    markersize=5,
     label="Predicted Price"
 )
 
@@ -258,20 +266,22 @@ ax.set_title(f"{selected_stock} 30-Day Forecast")
 ax.set_xlabel("Date")
 ax.set_ylabel("Predicted Price")
 
-ax.grid(alpha=0.3)
+ax.grid(True, alpha=0.3)
 
-# Show only weekly dates
-ax.xaxis.set_major_locator(mdates.WeekdayLocator(interval=1))
-ax.xaxis.set_major_formatter(mdates.DateFormatter("%d-%b"))
+# Automatically choose a small number of date labels
+locator = mdates.AutoDateLocator(minticks=5, maxticks=8)
+formatter = mdates.ConciseDateFormatter(locator)
 
-plt.xticks(rotation=45)
+ax.xaxis.set_major_locator(locator)
+ax.xaxis.set_major_formatter(formatter)
+
+plt.setp(ax.get_xticklabels(), rotation=30, ha="right")
 
 plt.legend()
 
 plt.tight_layout()
 
 st.pyplot(fig)
-
 # --------------------------------------------------
 # Market Sentiment
 # --------------------------------------------------
@@ -354,26 +364,27 @@ if metrics_file.exists():
 
         col1,col2,col3,col4 = st.columns(4)
 
+        metric_dict = dict(zip(metrics["Metric"], metrics["Value"]))
+
         col1.metric(
-            metrics.iloc[0,0],
-            metrics.iloc[0,1]
+           "MAE",
+           f"{metric_dict['MAE']:.2f}"
         )
 
         col2.metric(
-            metrics.iloc[1,0],
-            metrics.iloc[1,1]
+          "RMSE",
+          f"{metric_dict['RMSE']:.2f}"
         )
 
         col3.metric(
-            metrics.iloc[2,0],
-            metrics.iloc[2,1]
+            "R² Score",
+            f"{metric_dict['R2']:.3f}"
         )
 
         col4.metric(
-            metrics.iloc[3,0],
-            metrics.iloc[3,1]
+         "MAPE",
+         f"{metric_dict['MAPE']:.2f}%"
         )
-
     else:
 
         st.dataframe(metrics,use_container_width=True)
